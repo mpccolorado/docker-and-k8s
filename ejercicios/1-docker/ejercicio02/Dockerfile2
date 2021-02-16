@@ -1,0 +1,6 @@
+FROM gradle:4.7.0-jdk8-alpine
+COPY --chown=gradle:gradle . /home/gradle/src
+WORKDIR /home/gradle/src
+RUN gradle build --no-daemon
+EXPOSE 4444
+CMD ["java", "-Dcom.sun.management.jmxremote", "-Xmx128m", "-jar", "/home/gradle/src/build/libs/SocketServer-0.1.jar"]

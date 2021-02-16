@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/black.css" id="theme">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
+		<style>
+			.container{
+				display: flex;
+			}
+			.col{
+				flex: 1;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<section>
+						<h1>Objetivos</h1>
+						<ul>
+							<li>Automatizar la compilación de aplicaciones</li>
+							<li>Simplificar el despliegue</li>
+							<li>Evitar diferencias entre los distintos entornos</li>
+							<li>Reducir el tiempo necesario para que un nuevo programador comience el desarrollo</li>
+							<li>Crear un entorno resiliente</li>
+						</ul>
+					</section>
+					<section>
+						<h1>Herramientas</h1>
+						<ul>
+							<li>Docker y docker-compose</li>
+							<li>Kubernetes</li>
+							<li>HELM</li>
+							<li>Github Actions</li>
+						</ul>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h1>Objetivos</h1>
+						<ul>
+							<li>Entender qué es un contenedor y para qué sirve</li>
+							<li>Comprender la diferencia entre tiempo de construcción de la imagen y tiempo de ejecución</li>
+							<li>Hacer persistentes los datos</li>
+						</ul>
+					</section>
+					<section>
+						<h3>VM vs Contenedores</h3>
+						<div class="container">
+							<div class="col">
+								<img src="./images/container-vm-whatcontainer_2.png">
+							</div>
+							<div class="col">
+								<img src="./images/docker-containerized-appliction-blue-border_2.png">
+							</div>
+						</div>
+						<p>Las VM tienen embebido el sistema operativo</p>
+						<p>Los contenedores sólo tienen el código de la aplicación y sus librerías</p>
+					</section>
+					<section>
+						<div class="container">
+							<div class="col">
+								<img src="./images/docker_architecture.svg">
+							</div>
+						</div>
+						<p>Los contenedores vendrían a ser como instancias de las imágenes</p>
+					</section>
+				</section>
+				<section>
+					<h1>Ejercicios</h1>
+					<ul>
+						<li>Crear una imagen</li>
+						<li>Configurar la imagen con variables de entorno</li>
+						<li>Configurar volúmenes</li>
+						<li>Multistage docker files</li>
+						<li>Repositorio de docker</li>
+					</ul>
+				</section>
+				<section>
+					<section>
+						<h3>Crear una imagen</h3>
+						<div class="fragment">
+							<p>Crear archivo <strong>Dockerfile</strong>:</p>
+							<pre>
+								<code data-trim data-noescape>
+									FROM ubuntu:18.04
+								</code>
+							</pre>
+						</div>
+						<div class="fragment">
+							<p>Construimos la imagen</p>
+							<pre>
+								<code data-trim data-noescape>
+									$ docker build -t ejercicio1:latest .
+								</code>
+							</pre>
+						</div>
+						<div class="fragment">
+							<p>Ejecutamos el contenedor</p>
+							<pre>
+								<code data-trim data-noescape>
+									$ docker run ejercicio1:latest sleep infinity
+								</code>
+							</pre>
+						</div>
+					</section>
+					<section>
+						<div>
+							<p>Mostramos los contenedores en ejecución</p>
+							<pre>
+								<code data-trim data-noescape>
+									$ docker ps
+								</code>
+							</pre>
+							<img src="./images/docker-ps.png" alt="docker ps">
+						</div>
+					</section>
+					<section>
+						<div>
+							<p>Ejecutamos otro contenedor de la misma imagen</p>
+							<div class="fragment">
+								<pre>
+									<code data-trim data-noescape>
+										$ docker run -d ejercicio1:latest sleep infinity
+									</code>
+								</pre>
+								<p>(-d --detached)</p>
+							</div>
+						</div>
+						<div class="fragment">
+							<img src="./images/docker-ps-2.png" alt="docker ps">
+						</div>
+					</section>
+					<section>
+						<div>
+							<p>Ingresar al contenedor por consola</p>
+							<div>
+								<pre>
+									<code data-trim data-noescape>
+										$ docker exec -it CONTAINER-ID bash
+									</code>
+								</pre>
+								<p>Si entramos en uno de los contenedores y creamos un archivo, podemos ver que el archivo no aparece en el otro contenedor</p>
+							</div>
+						</div>
+					</section>
+					<section>
+						<div>
+							<p>Ejecutamos los dos contenedores con un volumen</p>
+							<pre>
+								<code data-trim data-noescape>
+									$ docker run -v $(pwd)/hostFolder:/containerFolder \
+										-d ejercicio1:latest \
+										sleep infinity
+								</code>
+							</pre>
+						</div>
+						<div class="fragment">
+							<p>Crear un archivo en uno de los contenedores y verificar que sea visible en el otro</p>
+							<pre>
+								<code data-trim data-noescape>
+									$ echo "File from one container" > /volume/file.txt
+								</code>
+							</pre>
+						</div>
+						<div class="fragment">
+							<p>Verificar que el archivo quede guardado también en el directorio del host</p>
+						</div>
+					</section>
+					<section>
+						<div>
+							<p>Instrucciones para generar la imagen</p>
+							<pre>
+								<code data-trim data-noescape data-line-numbers="2-4|5-8|9">
+									FROM openjdk:9-jre-slim
+									COPY build/libs/*.jar application.jar
+									EXPOSE 4444
+									CMD ["java", "-Dcom.sun.management.jmxremote", "-Xmx128m", "-jar", "application.jar"]
+								</code>
+							</pre>
+						</div>
+						<div class="fragment">
+							<p>Crear un archivo en uno de los contenedores y verificar que sea visible en el otro</p>
+							<pre>
+								<code data-trim data-noescape>
+									$ echo "File from one container" > /volume/file.txt
+								</code>
+							</pre>
+						</div>
+					</section>
+				</section>
+				<section>
+					docker-compose
+					<section>
+						<h1>Ejercicios</h1>
+						<ul>
+							<li>Configurar un archivo de docker-compose con un servicio de backend, uno de frontend y la base de datos</li>
+							<li>Networks</li>
+							<li>Variables de entorno</li>
+							<li>Puertos</li>
+							<li>Volúmenes</li>
+						</ul>
+					</section>
+				</section>
+				<section>Kubernetes</section>
+				<section>HELM</section>
+				<section>Github Actions</section>
+			</div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+		</script>
+	</body>
+</html>
