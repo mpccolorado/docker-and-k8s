@@ -169,7 +169,7 @@
 							<p>Crear un archivo en uno de los contenedores y verificar que sea visible en el otro</p>
 							<pre>
 								<code data-trim data-noescape>
-									$ echo "File from one container" > /volume/file.txt
+									$ echo "File from one container" > /containerFolder/file.txt
 								</code>
 							</pre>
 						</div>
@@ -177,6 +177,27 @@
 							<p>Verificar que el archivo quede guardado también en el directorio del host</p>
 						</div>
 					</section>
+				</section>
+				<section>
+					<p>Ejemplo de imagen más compleja</p>
+					<pre>
+						<code data-trim data-noescape data-line-numbers="1|2-3|5-10|12-13">
+							FROM python:2.7-stretch
+							RUN mkdir /usr/srv
+							WORKDIR /usr/srv
+
+							RUN apt-get update
+							RUN apt-get install -y libc-dev gcc libxslt-dev
+							RUN apt-get install -y python-m2crypto m2crypto \
+								wget unzip build-essential libssl-dev swig \
+								python-dulwich
+							RUN apt-get install -y vim
+
+							COPY requirements-flask.txt .
+							RUN pip install -r requirements-flask.txt
+							...
+						</code>
+					</pre>
 				</section>
 				<section>
 					<section>
@@ -233,6 +254,132 @@
 								</code>
 							</pre>
 						</div>
+					</section>
+				</section>
+				<section>
+					<h3>Configurar contenedores</h3>
+					<ol>
+						<li>Variables de entorno</li>
+						<li>Volúmenes</li>
+					</ol>
+				</section>
+				<section>
+					<section>
+						<h3>Variables de entorno</h3>
+						<p>Nos ayudan a configurar nuestras apps de distintas maneras sin tener la necesidad de recompilarlas</p>
+					</section>
+					<section>
+						<p>Ejemplos de uso</p>
+						<pre>
+							<code data-trim data-noescape data-line-numbers="1-8|2">
+								dataSource:
+								  url: jdbc:postgresql://${db.host}:${db.port}/${db.name}
+								  driverClassName: org.postgresql.Driver
+								  username: ${db.username}
+								  password: ${db.password}
+								  pooled: true
+								  jmxExport: true
+								  dialect: org.hibernate.dialect.PostgreSQL10Dialect
+							</code>
+						</pre>
+						<pre class="fragment">
+							<code data-trim data-noescape data-line-numbers="1,4">
+								import io.micronaut.context.annotation.Value
+
+								class SecurityClient implements SecurityApi {
+									@Value('${keycloak.host}')
+									String keycloakHost
+									...
+								}
+							</code>
+						</pre>
+					</section>
+					<section>
+						<p>Pasar variables de entorno a un contenedor</p>
+						<pre class="fragment">
+							<code data-trim data-noescape>
+								$ docker run -d some-image -e DB_HOST=localhost \
+									-e DB_PORT=5432 -e DB_NAME=mydatabase
+							</code>
+						</pre>
+						<p class="fragment">
+							<strong>DB_HOST</strong> como variable de entorno == <strong>db.host</strong> en código
+						</p>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>Volúmenes</h3>
+						<ul>
+							<li class="fragment">Pueden ser útiles para reemplazar un archivo de configuración</li>
+							<li class="fragment">Permiten persistir los cambios</li>
+						</ul>
+					</section>
+					<section>
+						<p>default.conf</p>
+						<pre>
+							<code data-trim data-noescape>
+								server {
+									listen 80 default_server;
+									server_name www.my-domain.com my-domain.com;
+
+									location / {
+										proxy_pass http://myapp:8080;
+										proxy_set_header    Host                $http_host;
+										proxy_set_header    X-Real-IP           $remote_addr;
+										proxy_set_header    X-Forwarded-For     $proxy_add_x_forwarded_for;
+									}
+								}
+							</code>
+						</pre>
+					</section>
+					<section>
+						<p>Se reemplaza el archivo por defecto default.conf de nginx por uno nuevo</p>
+						<pre>
+							<code data-trim data-noescape>
+								FROM nginx
+								COPY default.conf /etc/nginx/conf.d/default.conf
+								...
+							</code>
+						</pre>
+					</section>
+					<section>
+						<p>Al levantar el contenedor la nueva configuración reemplazará a la configuración por defecto</p>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h3>Repositorio de docker</h3>
+						<p>Sirven para almacenar las distintas imágenes de docker</p>
+					</section>
+					<section>
+						<h4>Iniciar sesión</h4>
+						<pre>
+							<code data-trim data-noescape>
+								$ docker login
+							</code>
+						</pre>
+						<p class="fragment">Nos solicitará las credenciales del repositorio de docker</p>
+						<p class="fragment">Por defecto el repositorio será el de docker hub</p>
+					</section>
+					<section>
+						<h4>Subir imagen generada</h4>
+						<p>Nomensclatura nombre de imagen: <strong>nombreusuario/repositorio:tag</strong></p>
+						<pre>
+							<code data-trim data-noescape>
+								$ docker build -t mpccolorado/mirepositorio:0.3 .
+								$ docker push mpccolorado/mirepositorio:0.3
+							</code>
+						</pre>
+					</section>
+					<section>
+						<h4>Bajar imagen desde el repositorio</h4>
+						<pre>
+							<code data-trim data-noescape>
+								$ docker pull mpccolorado/mirepositorio:0.3
+								$ docker run -d mpccolorado/mirepositorio:0.3
+							</code>
+						</pre>
 					</section>
 				</section>
 				<section>
