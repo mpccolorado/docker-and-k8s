@@ -177,23 +177,59 @@
 							<p>Verificar que el archivo quede guardado también en el directorio del host</p>
 						</div>
 					</section>
+				</section>
+				<section>
 					<section>
 						<div>
-							<p>Instrucciones para generar la imagen</p>
+							<h3>Ejercicio 2</h3>
+							<p>Imagen para ejecutar una app de java (ya compilada)</p>
 							<pre>
-								<code data-trim data-noescape data-line-numbers="2-4|5-8|9">
-									FROM openjdk:9-jre-slim
+								<code data-trim data-noescape data-line-numbers="1|2|3|4-5">
+									FROM openjdk:8-jre-slim
 									COPY build/libs/*.jar application.jar
 									EXPOSE 4444
-									CMD ["java", "-Dcom.sun.management.jmxremote", "-Xmx128m", "-jar", "application.jar"]
+									CMD ["java", "-Dcom.sun.management.jmxremote", \
+										"-Xmx128m", "-jar", "application.jar"]
 								</code>
 							</pre>
 						</div>
-						<div class="fragment">
-							<p>Crear un archivo en uno de los contenedores y verificar que sea visible en el otro</p>
+					</section>
+					<section>
+						<div>
+							<p>Imagen para compilar la app de java y utilizarla</p>
 							<pre>
-								<code data-trim data-noescape>
-									$ echo "File from one container" > /volume/file.txt
+								<code data-trim data-noescape data-line-numbers="1|2|3|4|5|6-7">
+									FROM gradle:4.7.0-jdk8-alpine
+									COPY --chown=gradle:gradle . /home/gradle/src
+									WORKDIR /home/gradle/src
+									RUN gradle build --no-daemon
+									EXPOSE 4444
+									CMD ["java", "-Dcom.sun.management.jmxremote", \
+										"-Xmx128m", "-jar", "/home/gradle/src/build/libs/SocketServer-0.1.jar"]
+								</code>
+							</pre>
+						</div>
+					</section>
+					<section>
+						<div>
+							<p>Dockerfile multistage</p>
+							<pre>
+								<code data-trim data-noescape data-line-numbers="1|6|1-4|6-9|11-14">
+									FROM gradle:4.7.0-jdk8-alpine AS build
+									COPY --chown=gradle:gradle . /home/gradle/src
+									WORKDIR /home/gradle/src
+									RUN gradle build --no-daemon
+
+									FROM openjdk:8-jre-slim
+									EXPOSE 4444
+									RUN mkdir /app
+									COPY --from=build /home/gradle/src/build/libs/*.jar /app/application.jar
+
+									ENTRYPOINT ["java", "-XX:+UnlockExperimentalVMOptions", \
+										"-XX:+UseCGroupMemoryLimitForHeap", \
+										"-Djava.security.egd=file:/dev/./urandom", \
+										"-jar", "/app/application.jar"]
+
 								</code>
 							</pre>
 						</div>
