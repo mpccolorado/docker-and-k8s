@@ -383,6 +383,17 @@
 					</section>
 				</section>
 				<section>
+					<h3>Puertos</h3>
+					<p>El <strong>HOST</strong> es el entorno en el que se ejecuta el contenedor</p>
+					<p>Si se quiere acceder al contenedor desde un puerto del host, se debe mapear el mismo</p>
+					<pre>
+						<code data-trim data-noescape>
+							$ docker run mpccolorado/mirepositorio:0.3 -p 8082:8080
+						</code>
+					</pre>
+					<p>Se creará un contenedor que mapeará el puerto 8082 del <strong>HOST</strong> al puerto 8080 del <strong>contenedor</strong></p>
+				</section>
+				<section>
 					docker-compose
 					<section>
 						<h1>Ejercicios</h1>
@@ -393,6 +404,53 @@
 							<li>Puertos</li>
 							<li>Volúmenes</li>
 						</ul>
+					</section>
+					<section>
+						<pre>
+							<code>version: '3.7'
+services:
+  my_service:
+	image: mpccolorado/myrepositorio:0.1
+	build:
+	  context: .
+	  dockerfile: Dockerfile-dev
+	environment:
+	  - DB_HOST=organization_db
+	  - DB_PORT=5432
+	  - DB_NAME=organizations
+	  - DB_USERNAME=postgres
+	  - DB_PASSWORD=postgres
+	volumes:
+	  - ./src:/app/src
+	ports:
+	  - 8082:8080
+	entrypoint: ["./wait-for-it.sh", "organization_db:5432", "-t", "30", "--", "sh", "-c", "/app/gradlew run --continuous"]
+	networks:
+	  - mynetwork
+	depends_on:
+	  - my_service_db
+
+  my_service_db:
+	image: postgres:10.5
+	restart: always
+	# ports:
+	# - 5432:5432
+	environment:
+	  - POSTGRES_DB=organizations
+	  - POSTGRES_USER=postgres
+	  - POSTGRES_PASSWORD=postgres
+	volumes:
+	  - data:/var/lib/postgresql/data
+	networks:
+	  - mynetwork
+
+networks:
+  mynetwork:
+
+volumes:
+  data:
+							</code>
+						</pre>
 					</section>
 				</section>
 				<section>Kubernetes</section>
